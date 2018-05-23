@@ -439,7 +439,7 @@ class LogReader:
 			if os.path.isfile(log_path) and not "active_session" in log_path:
 				self.logs.append(Log(log_path))
 
-		ascensions = []
+		self.ascensions = []
 		new_ascension_index = None
 		current_ascension = []
 		
@@ -450,7 +450,7 @@ class LogReader:
 			for i, ev in enumerate(l.events):
 				if ev.type == 'PHPEvent' and ev.content[0].startswith('ascend.php'):
 					current_ascension.extend(l.events[:i])
-					ascensions.append(Ascension(current_ascension))
+					self.ascensions.append(Ascension(current_ascension))
 
 					new_ascension_index = i
 					current_ascension = []
@@ -462,12 +462,8 @@ class LogReader:
 			else:
 				current_ascension.extend(l.events[new_ascension_index:])
 
-		ascensions.append(Ascension(current_ascension))
-		for asc in ascensions:
-		#asc = ascensions[-4]
+		self.ascensions.append(Ascension(current_ascension))
+		for asc in self.ascensions:
 			advs = [ev for ev in asc.events if ev.type == "AdventureEvent" or ev.type == "PHPEvent" or ev.type == "CastEvent"]
 			unfuck_log(advs)
 			unfuck_log(advs, fix=False)
-
-			for a in advs:
-				print(a.turn_no, a.content[0])
