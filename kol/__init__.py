@@ -296,7 +296,14 @@ class Log:
 			"friars": BuffEvent,
 			"You gain": MeatEvent,
 			"maximize": "ignore",
-			"#": "ignore"
+			"#": "ignore",
+			"feed": "ignore",
+			"Leaflet": "ignore",
+			"Entering": "ignore", # Nemesis: This is broken, why?
+			"Examining": "ignore", # also broken lol
+			"Investigating": "ignore", # Dakota Fanning, this is broken
+			"grandpa": "ignore", # XXX: Sea
+			"send": "ignore"
 		}
 
 		found = False
