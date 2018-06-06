@@ -43,14 +43,13 @@ class AdventureEvent(Event):
 	def __init__(self, log_name, turn_no, lines):
 		super().__init__("AdventureEvent", log_name)
 		self.content = lines
-		self.last_turn = turn_no
-
 		parsed = re.match("\\[([0-9]*)\\] (.*)", lines[0])
 		if parsed == None:
 			raise ValueError("NO")
 
 		self.turn_no = int(parsed[1])
-		self._length = self.turn_no - turn_no
+		# We don't know the length of an adventure at the time we parse it - that can only be derived from the turn no of the next event.
+		self._length = None
 
 		self.location = parsed[2]
 		self.encounters = []
@@ -338,7 +337,8 @@ class Log:
 							before = current_event[:idx]
 							after = current_event[idx:]
 							before_ev = event_map[key](self.name, self.current_turn_no, before)
-							self.current_turn_no += before_ev.length()
+							if before_ev.type == "AdventureEvent" and before_ev.turn_no:
+								self.current_turn_no = before_ev.turn_no
 							self.events.append(before_ev)
 							self.current_turn_no += 1
 
@@ -360,7 +360,8 @@ class Log:
 			if not skipped:
 				# handle it!
 				# If the event gives us a turn count, use it.
-				self.current_turn_no += last_ev.length()
+				if last_ev.type == 'AdventureEvent' and last_ev.turn_no:
+					self.current_turn_no = last_ev.turn_no
 				self.events.append(last_ev)
 		else:
 			php_result = re.match(php_regex, current_event[0])
@@ -373,6 +374,49 @@ class Log:
 				print("Unhandled event", current_event)
 				print("Bug Stary about it.")
 				exit()
+
+def calculate_lengths(events):
+	i_a = 0
+	i_b = 1
+	a = events[0]
+	b = events[1]
+
+	def adv():
+		nonlocal a
+		nonlocal b
+		nonlocal i_a
+		nonlocal i_b
+		print("adv", i_a, i_b)
+		i_a += 1
+		i_b += 1
+		a = events[i_a]
+		b = events[i_b]
+
+	def skip_b():
+		nonlocal b
+		nonlocal i_b
+		print("adv b", i_a, i_b)
+		i_b += 1
+		b = events[i_b]
+
+	while i_b < len(events)-1:
+		skip=False
+		print(a.content[0], b.content[0])
+		print(a.turn_no, b.turn_no)
+		print("len", a.length(), b.length())
+
+		if a.length() != None:
+			adv()
+			continue
+		if b.length() != None:
+			skip_b()
+			continue
+
+		if a.length() == None:
+			a._length = b.turn_no - a.turn_no
+			print("Filling length!!!!", a._length)
+			adv()
+		#exit()
 
 def unfuck_log(advs, fix=True):	
 	print("unfucking", len(advs), "events")
@@ -465,5 +509,6 @@ class LogReader:
 		self.ascensions.append(Ascension(current_ascension))
 		for asc in self.ascensions:
 			advs = [ev for ev in asc.events if ev.type == "AdventureEvent" or ev.type == "PHPEvent" or ev.type == "CastEvent"]
+			calculate_lengths(advs)
 			unfuck_log(advs)
 			unfuck_log(advs, fix=False)
